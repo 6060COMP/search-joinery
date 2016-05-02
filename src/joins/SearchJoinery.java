@@ -3,6 +3,7 @@ package joins;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.Vector;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Simple class to demonstrate the use of Thread.join() as a barrier
@@ -39,21 +40,23 @@ public class SearchJoinery {
    */
   public Vector<String> search() throws InterruptedException {
     ArrayList<Thread> threads = new ArrayList<Thread>();
+    // create a new CountDownLatch
+    CountDownLatch latch = new CountDownLatch(WAREHOUSE_COUNT);
     // create search threads and start them
     for (Warehouse warehouse : warehouses) {
       Thread thread = new Thread() {
         public void run() {
           results.add(warehouse.searchPrice(searchTerm, 30));
+          // after operation has completed, count down the latch
+          latch.countDown();
         }
       };
       threads.add(thread);
       thread.start();
     }
 
-    // now wait for them all to finish
-    for (Thread thread : threads) {
-      thread.join();
-    }
+    // await the latch
+    latch.await();
 
     // work through returned results
     Vector<String> prices = sortPrices();
